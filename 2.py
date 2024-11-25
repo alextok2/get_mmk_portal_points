@@ -19,7 +19,6 @@ max_unique_posts = 3
 
 
 
-
 def like_the_post():
     try:
         like_button = WebDriverWait(driver, 10).until(
@@ -80,7 +79,7 @@ def redirect_to_last_page():
     except Exception as e:
         print(f"Failed to navigate to the last page: {e}")
 
-def comment_post():
+def comment_post1():
     
     existing_post_ids = read_existing_post_ids('commented_posts.txt')
 
@@ -127,6 +126,75 @@ def comment_post():
     except Exception as e:
         print(f"Failed to extract post IDs: {e}")
         
+def comment_post():
+    commented_post = False
+
+    existing_post_ids = read_existing_post_ids('commented_posts.txt')
+
+    try:
+        # Try multiple XPath selectors to find post elements
+        elements = 0
+        while commented_post == False:
+            post_elements = driver.find_elements(By.XPATH, '//div[contains(@class, "news-list__item")]')
+            print(f"Post elements found: {len(post_elements)}")  # Debugging: Print the number of post elements
+            for post_element in post_elements:
+                for existing_post_id in existing_post_ids:
+                    print(existing_post_id)
+                    if post_element != existing_post_id and len(post_elements)<elements:
+                        elements += 1
+                        try:
+                            # Extract post ID from the data-news-id attribute
+                            post_id = post_element.get_attribute('data-news-id')
+                            if post_id is None or post_id == '':
+                                print("Post ID is None or empty, skipping this element.")
+                                continue
+                            
+                            print(f"Found post ID: {post_id}")
+                            if post_id not in existing_post_ids:
+                                # Navigate to the post page
+                                # Assuming the post URL can be constructed from the post ID
+                                post_url = f"https://www.mmk-portal.mmk.ru/news/{post_id}/#comments-news-{post_id}"  # Update this URL as per your site's structure
+                                driver.get(post_url)
+                                
+                                # Wait for the post page to load
+                                time.sleep(2)
+                                
+                                print(f"Commenting on post with ID: {post_id}")
+                                
+                                # Locate the comment box
+                                try:
+                                    # Add a "like" smiley to the comment
+                                    smiley_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, 'cke_10')))
+                                    smiley_button.click()
+                                except Exception as e:
+                                    print(f"Failed to find or click smiley button for post ID {post_id}: {e}")
+                                    # Add the post ID to commented_posts.txt and skip the rest of the processing
+                                    write_post_id('commented_posts.txt', post_id)
+                                    continue
+                                time.sleep(1)  # Wait for the emotion menu to appear
+                                
+                                # Find and click the thumbs up emotion
+                                # Assuming the thumbs up button has a specific class or identifier
+                                WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//td[@class="cke_dark_background cke_centered"]')))
+                                
+                                # Find and click the thumbs up emotion
+                                thumbs_up_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//a[@href="javascript:void(0)"]/img[@title="yes" and @src="https://www.mmk-portal.mmk.ru/local/client/app/editor/plugins/smiley/images/thumbs_up.png"]')))
+                                thumbs_up_button.click()
+                                
+                                time.sleep(1)
+
+
+                                # submit_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//input[@class="button button-blue" and @type="submit" and @value="Отправить"]')))
+                                # submit_button.click()
+                                # Write the post ID to the file
+                                write_post_id('commented_posts.txt', post_id)
+
+                                commented_post = True
+
+                        except Exception as e:
+                            print(f"Failed to process individual post element:")
+    except Exception as e:
+        print(f"Failed to extract post IDs: {e}")
 
 
 

@@ -128,50 +128,74 @@ def comment_post1():
         print(f"Failed to extract post IDs: {e}")
         
 def comment_post():
+    commented_post = False
+
     existing_post_ids = read_existing_post_ids('commented_posts.txt')
 
     try:
-        # Updated XPath to match both 'news-list item' and 'news-list__item'
-        post_elements = driver.find_elements(By.XPATH, '//div[contains(@class, "news-list_item") or contains(@class, "news-list__item")]')
-        print(f"Post elements found: {len(post_elements)}")  # Debugging: Print the number of post elements
+        # Try multiple XPath selectors to find post elements
+        elements = 0
+        while commented_post == False:
+            post_elements = driver.find_elements(By.XPATH, '//div[contains(@class, "news-list__item")]')
+            print(f"Post elements found: {len(post_elements)}")  # Debugging: Print the number of post elements
+            for post_element in post_elements:
+                for existing_post_id in existing_post_ids:
+                    print(existing_post_id)
+                    if post_element != existing_post_id and len(post_elements)<elements:
+                        elements += 1
+                        try:
+                            # Extract post ID from the data-news-id attribute
+                            post_id = post_element.get_attribute('data-news-id')
+                            if post_id is None or post_id == '':
+                                print("Post ID is None or empty, skipping this element.")
+                                continue
+                            
+                            print(f"Found post ID: {post_id}")
+                            if post_id not in existing_post_ids:
+                                # Navigate to the post page
+                                # Assuming the post URL can be constructed from the post ID
+                                post_url = f"https://www.mmk-portal.mmk.ru/news/{post_id}/#comments-news-{post_id}"  # Update this URL as per your site's structure
+                                driver.get(post_url)
+                                
+                                # Wait for the post page to load
+                                time.sleep(2)
+                                
+                                print(f"Commenting on post with ID: {post_id}")
+                                
+                                # Locate the comment box
+                                try:
+                                    # Add a "like" smiley to the comment
+                                    smiley_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, 'cke_10')))
+                                    smiley_button.click()
+                                except Exception as e:
+                                    print(f"Failed to find or click smiley button for post ID {post_id}: {e}")
+                                    # Add the post ID to commented_posts.txt and skip the rest of the processing
+                                    write_post_id('commented_posts.txt', post_id)
+                                    continue
+                                time.sleep(1)  # Wait for the emotion menu to appear
+                                
+                                # Find and click the thumbs up emotion
+                                # Assuming the thumbs up button has a specific class or identifier
+                                WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//td[@class="cke_dark_background cke_centered"]')))
+                                
+                                # Find and click the thumbs up emotion
+                                thumbs_up_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//a[@href="javascript:void(0)"]/img[@title="yes" and @src="https://www.mmk-portal.mmk.ru/local/client/app/editor/plugins/smiley/images/thumbs_up.png"]')))
+                                thumbs_up_button.click()
+                                
+                                time.sleep(1)
 
-        for post_element in post_elements:
-            try:
-                # Find the <a> tag within the post element
-                a_tag = post_element.find_element(By.XPATH, './/div[@class="item-top"]/a')
-                if a_tag is None:
-                    print("No <a> tag found in this element, skipping this element.")
-                    continue
-                
-                # Get the href attribute from the <a> tag
-                post_url = a_tag.get_attribute('href')
-                if post_url is None:
-                    print("Post URL is None, skipping this element.")
-                    continue
-                
-                post_id = post_url.split('/')[-2] if post_url.endswith('/') else post_url.split('/')[-1]
-                
-                print(post_id)
-                if post_id not in existing_post_ids:
-                    # Navigate to the post page
-                    driver.get(post_url)
-                    
-                    # Wait for the post page to load (you might need to adjust the sleep time)
-                    time.sleep(2)
-                    
-                    # Comment on the post (this part will be implemented later)
-                    # For now, let's just print that we are commenting
-                    print(f"Commenting on post with ID: {post_id}")
-                    
-                    # Write the post ID to the file
-                    write_post_id('commented_posts.txt', post_id)
-            except Exception as e:
-                print(f"Failed to process post element: {e}")
 
+                                # submit_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//input[@class="button button-blue" and @type="submit" and @value="Отправить"]')))
+                                # submit_button.click()
+                                # Write the post ID to the file
+                                write_post_id('commented_posts.txt', post_id)
+
+                                commented_post = True
+
+                        except Exception as e:
+                            print(f"Failed to process individual post element:")
     except Exception as e:
         print(f"Failed to extract post IDs: {e}")
-
-
 
 
 # Set up Chrome options
@@ -203,42 +227,16 @@ redirect_to_main()
 
 
 
-# for unique_posts_commented in range(max_unique_posts):
-redirect_to_last_page()
-comment_post()
+for unique_posts_commented in range(max_unique_posts):
+    redirect_to_last_page()
+    time.sleep(2)
+    comment_post()
 
-# driver.get('https://www.mmk-portal.mmk.ru/news/')
-time.sleep(2)
+    driver.get('https://www.mmk-portal.mmk.ru/news/')
+    time.sleep(2)
 
 
 time.sleep(20)
 driver.quit()
 
 
-
-Failed to process post element: Message: no such element: Unable to locate element: {"method":"xpath","selector":".//div[@class="item-top"]/a"}
-  (Session info: chrome=130.0.6723.117); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
-Stacktrace:
-        GetHandleVerifier [0x00007FF7DA9138A5+3004357]
-        (No symbol) [0x00007FF7DA5A9970]
-        (No symbol) [0x00007FF7DA45582A]
-        (No symbol) [0x00007FF7DA4A5B8E]
-        (No symbol) [0x00007FF7DA4A5E7C]
-        (No symbol) [0x00007FF7DA4993DC]
-        (No symbol) [0x00007FF7DA4CBC1F]
-        (No symbol) [0x00007FF7DA4992A6]
-        (No symbol) [0x00007FF7DA4CBDF0]
-        (No symbol) [0x00007FF7DA4EBA4C]
-        (No symbol) [0x00007FF7DA4CB983]
-        (No symbol) [0x00007FF7DA497628]
-        (No symbol) [0x00007FF7DA498791]
-        GetHandleVerifier [0x00007FF7DA93A00D+3161901]
-        GetHandleVerifier [0x00007FF7DA98E060+3506048]
-        GetHandleVerifier [0x00007FF7DA98400D+3465005]
-        GetHandleVerifier [0x00007FF7DA700EEB+830987]
-        (No symbol) [0x00007FF7DA5B467F]
-        (No symbol) [0x00007FF7DA5B09D4]
-        (No symbol) [0x00007FF7DA5B0B6D]
-        (No symbol) [0x00007FF7DA5A0149]
-        BaseThreadInitThunk [0x00007FFE91517AC4+20]
-        RtlUserThreadStart [0x00007FFE93A8A8C1+33]
