@@ -210,11 +210,12 @@ driver.get('https://www.mmk-portal.mmk.ru/')  # Update this URL to the actual ne
 time.sleep(1)  # You might want to use WebDriverWait for more robust waiting
 
 pyautogui.typewrite(username)
-
+time.sleep(1)
 pyautogui.press("tab")
 
-pyautogui.typewrite(password)
 
+pyautogui.typewrite(password)
+time.sleep(1)
 pyautogui.press("enter")
 
 
