@@ -62,6 +62,33 @@ def redirect_to_main():
     except Exception as e:
         print(f"Redirection page not found or link extraction failed: {e}")
 
+def redirect_to_previous_page():
+    try:
+        pagination_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//div[@class="pagination__list"]'))
+        )
+        
+        # Find the currently active page link
+        active_page_link = WebDriverWait(pagination_element, 10).until(
+            EC.presence_of_element_located((By.XPATH, './/div[@class="pagination__list-item page--active"]/a'))
+        )
+        
+        # Get the index of the active page
+        active_page_index = len(pagination_element.find_elements(By.XPATH, './/div[@class="pagination__list-item"][:contains(a[@class="page--active"])]'))
+        
+        # Find the previous page link by navigating to the previous list item
+        previous_page_link = WebDriverWait(pagination_element, 10).until(
+            EC.presence_of_element_located((By.XPATH, f'.//div[@class="pagination__list-item"][{active_page_index - 1}]/a'))
+        )
+        
+        # Click the previous page number
+        previous_page_link.click()
+        print("Navigated to the previous page successfully.")
+    except Exception as e:
+        print(f"Failed to navigate to the previous page: {e}")
+
+
+
 def redirect_to_last_page():
     try:
         pagination_element = WebDriverWait(driver, 10).until(
@@ -78,6 +105,7 @@ def redirect_to_last_page():
         print("Navigated to the last page successfully.")
     except Exception as e:
         print(f"Failed to navigate to the last page: {e}")
+
 
 def comment_post1():
     
@@ -193,6 +221,8 @@ def comment_post():
 
                         except Exception as e:
                             print(f"Failed to process individual post element:")
+                    else: 
+                        redirect_to_previous_page()
     except Exception as e:
         print(f"Failed to extract post IDs: {e}")
 
